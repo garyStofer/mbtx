@@ -51,6 +51,8 @@ extern void setRtcCAL( uint8_t value ) ;
 #endif
 
 extern void writeExtRtc( uint8_t *ptr ) ;
+extern void readExtRtc() ;		// from sound.cpp
+extern void pollForRtcComplete() ; // from sound.cpp
 
 /* make sure the defines below always go in numeric order */
 //#define AUDIO_TADA (0)
@@ -81,14 +83,10 @@ extern volatile uint8_t Buzzer_count ;
 
 
 extern void start_sound( void ) ;
-extern void buzzer_on( void ) ;
-extern void buzzer_off( void ) ;
-extern void buzzer_sound( uint8_t time ) ;
 extern void set_frequency( uint32_t frequency ) ;
 extern void start_dactimer( void ) ;
 extern void init_dac( void ) ;
 extern "C" void DAC_IRQHandler( void ) ;
-extern void end_sound( void ) ;
 extern void sound_5ms( void ) ;
 extern void playTone( uint32_t frequency, uint32_t time ) ;
 extern uint32_t queueTone( uint32_t frequency, uint32_t time, uint32_t frequency_increment, uint32_t lock ) ;

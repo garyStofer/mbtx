@@ -1028,10 +1028,25 @@ void perOut(int16_t *chanOut, uint8_t att )
 					act[i] = (int32_t)v*DEL_MULT ;
 				}
         //========== CURVES ===============
-				if ( md->differential )
+				uint32_t diffValue ;
+				diffValue = md->differential | (md->extDiff << 1 ) ;
+				if ( diffValue )
 				{
       		//========== DIFFERENTIAL =========
       		int8_t curveParam = REG100_100( md->curve ) ;
+					if ( diffValue == 3 )
+					{
+						// New Gvar
+						if ( curveParam < 0 )
+						{
+							curveParam = -curveParam - 1 ;							
+							curveParam = -g_model.gvars[curveParam].gvar ;
+						}
+						else
+						{
+							curveParam = g_model.gvars[curveParam].gvar ;
+						}
+					}
       		if (curveParam > 0 && v < 0)
       		  v = (v * (100 - curveParam)) / 100;
       		else if (curveParam < 0 && v > 0)

@@ -2345,6 +2345,68 @@ void dispGvar( uint8_t x, uint8_t y, uint8_t gvar, uint8_t attr )
 	lcd_putcAtt( x+2*FW, y, gvar+'0', attr ) ;
 }
 
+int16_t gvarDiffValue( uint16_t x, uint16_t y, int16_t value, uint16_t attr, uint8_t event )
+{
+  uint8_t invers = attr&(INVERS|BLINK) ;
+	int16_t temp ;
+
+	if (value >= 500)
+	{
+		// A gvar
+		value -= 510 ;
+		temp = value ;
+		if ( temp < 0 )
+		{
+			temp = -temp - 1 ;
+  		lcd_putcAtt(x-4*FW, y,'-',attr) ;
+		}
+		dispGvar( x-3*FW, y, temp+1, attr ) ;
+		if (invers) value = checkIncDec16( value, -7, 6, EE_MODEL) ;
+		value += 510 ;
+	}
+	else
+	{
+ 	  lcd_outdezAtt(x, y, value, attr ) ;
+   	if (invers) CHECK_INCDEC_H_MODELVAR( value, -100, 100) ;
+	}
+	
+	if (invers)
+	{
+		uint32_t toggle = 0 ;
+		if ( event == EVT_TOGGLE_GVAR )
+		{
+			toggle = 1 ;
+		}
+		if ( getEventDbl(EVT_KEY_FIRST(BTN_RE)) > 1 )
+		{
+   		killEvents(EVT_KEY_FIRST(BTN_RE)) ;
+			toggle = 1 ;
+		}
+		if ( toggle )
+		{
+			if ( value >= 500 )
+			{
+				value -= 510 ;
+				if ( value < 0 )
+				{
+					value = -g_model.gvars[-value-1].gvar ;
+				}
+				else
+				{
+					value = g_model.gvars[(uint8_t)value].gvar ;
+				}
+			}
+			else
+			{
+				value = 510 ;
+			}
+//    	value = ( value >= 500) ? g_model.gvars[(uint8_t)value-126].gvar : 510) ;
+//	    eeDirty(EE_MODEL) ;
+		}
+	}
+	return value ;
+}
+
 int16_t gvarMenuItem(uint8_t x, uint8_t y, int16_t value, int8_t min, int8_t max, uint16_t attr, uint8_t event )
 {
   uint8_t invers = attr&(INVERS|BLINK);
@@ -7438,8 +7500,10 @@ void menuProcSafetySwitches(uint8_t event)
 	EditType = EE_MODEL ;
 	static MState2 mstate2;
 #ifdef NO_VOICE_SWITCHES
+ #define SAFE_VAL_OFFSET	0
 	event = mstate2.check_columns(event, NUM_SKYCHNOUT+1+1+NUM_VOICE-1 - 1 - 1 ) ;
 #else
+ #define SAFE_VAL_OFFSET	1
 	event = mstate2.check_columns(event, NUM_SKYCHNOUT+1+1+NUM_VOICE-1 - 1 ) ;
 #endif
 
@@ -7455,10 +7519,14 @@ void menuProcSafetySwitches(uint8_t event)
 	DisplayOffset = SAFE_OFF_0 ;
 #endif
 
+#ifdef NO_VOICE_SWITCHES
+	lcd_outdez( 20*FW+SAFE_OFF_0, 0, g_chans512[sub]/2 + 1500 ) ;
+#else
 	if ( sub )
 	{
-    lcd_outdez( 20*FW+SAFE_OFF_0, 0, g_chans512[sub-1]/2 + 1500 ) ;
+   lcd_outdez( 20*FW+SAFE_OFF_0, 0, g_chans512[sub-SAFE_VAL_OFFSET]/2 + 1500 ) ;
 	}
+#endif
 
 	for(uint8_t i=0; i<SCREEN_LINES-1; i++)
 	{
@@ -9531,86 +9599,136 @@ void menuProcMixOne(uint8_t event)
 						md2->lateOffset = onoffMenuItem( md2->lateOffset, y, PSTR(STR_2FIX_OFFSET), attr ) ;
             break;
         case 4:
-						if ( ( md2->srcRaw <=4 ) )
-						{
-    					lcd_puts_Pleft( y, PSTR(STR_ENABLEEXPO) ) ;
-							md2->disableExpoDr = offonItem( md2->disableExpoDr, y, attr ) ;
-						}
-						else
-						{
-							md2->disableExpoDr = onoffMenuItem( md2->disableExpoDr, y, XPSTR("\001Use Output   "), attr ) ;
-						}
+				if ( ( md2->srcRaw <=4 ) )
+				{
+				lcd_puts_Pleft( y, PSTR(STR_ENABLEEXPO) ) ;
+					md2->disableExpoDr = offonItem( md2->disableExpoDr, y, attr ) ;
+				}
+				else
+				{
+					md2->disableExpoDr = onoffMenuItem( md2->disableExpoDr, y, XPSTR("\001Use Output   "), attr ) ;
+				}
             break;
         case 5:
 						md2->carryTrim = offonMenuItem( md2->carryTrim, y, PSTR(STR_2TRIM), attr ) ;
             break;
         
-				case 6:
-					{	
-					 	uint8_t value = md2->differential ;
-						if ( value == 0 )
-						{
-							if ( md2->curve <= -28 )
-							{
-								value = 2 ;		// Expo
-							}
-						}
-	          lcd_putsAtt(  1*FW, y, PSTR(STR_Curve), (value == 0) ? attr : 0 ) ;
-	          lcd_putsAtt(  1*FW, y, PSTR(STR_15DIFF), (value == 1) ? attr : 0 ) ;
-	          lcd_putsAtt(  1*FW, y, XPSTR("\021Expo"), (value == 2) ? attr : 0 ) ;
-					 	uint8_t value2 = value ;
-    		    if(attr) CHECK_INCDEC_H_MODELVAR_0( value2, 2) ;
-					 	if ( value != value2 )
-						{
-							if ( value2 == 2 )
-							{
-								md2->curve = -128 ;
-							}
-							else
-							{
-								md2->curve = 0 ;
-							}
-							md2->differential = value2 & 1 ;	// 0 and 2 turn it off
-						}
+		case 6:
+			{	
+				uint32_t diffValue ;
+				diffValue = md2->differential | (md2->extDiff << 1 ) ;
+				
+				uint8_t value = diffValue ;
+				if ( value == 0 )
+				{
+					if ( md2->curve <= -28 )
+					{
+						value = 2 ;		// Expo
 					}
+				}
+				lcd_putsAtt(  1*FW, y, PSTR(STR_Curve), (value == 0) ? attr : 0 ) ;
+				lcd_putsAtt(  1*FW, y, PSTR(STR_15DIFF), (value & 1) ? attr : 0 ) ;
+				lcd_putsAtt(  1*FW, y, XPSTR("\021Expo"), (value == 2) ? attr : 0 ) ;
+				uint8_t value2 = value ;
+				if ( value2 == 3 )
+				{
+					value2 = 1 ;
+				}
+
+    		    if(attr) CHECK_INCDEC_H_MODELVAR_0( value2, 2) ;
+
+				if ( value != value2 )
+				{
+					if ( ( value == 3 ) && ( value2 == 1 ) )
+					{
+						value2 = 3 ;
+					}
+				}	
+				if ( value != value2 )
+				{
+					if ( value2 == 2 )
+					{
+						md2->curve = -128 ;
+					}
+					else
+					{
+						md2->curve = 0 ;
+					}
+					diffValue = value2 & 1 ;	// 0 and 2 turn it off
+					md2->differential = diffValue ;
+					md2->extDiff = diffValue >> 1 ;
+				}
+			}
         break ;
 
         case 7:
-						if ( md2->differential )		// Non zero for curve
-						{	
-		          md2->curve = gvarMenuItem( 12*FW, y, md2->curve, -100, 100, attr /*( m_posHorz==1 ? attr : 0 )*/, event ) ;
+			{	
+				if ( md2->differential )	// 1 or 3
+				{
+					int16_t value = md2->curve ;
+					if ( md2->extDiff == 0 )	// old setup
+					{
+						if (value >= 126 || value <= -126)
+						{
+							// Gvar
+							value = (uint8_t)value - 126 ; // 0 to 4
+							value += 510 ;
+						}
+					}
+					else
+					{
+						value += 510 ;
+					}
+					value = gvarDiffValue( 12*FW, y, value, attr, event ) ;
+					if ( value > 500 )
+					{
+						md2->differential = 1 ;
+						md2->extDiff = 1 ;
+						value -= 510 ;
+					}
+					else
+					{	
+						md2->differential = 1 ;
+						md2->extDiff = 0 ;
+					}
+					md2->curve = value ;
+					}
+//						if ( md2->differential )		// Non zero for curve
+//						{	
+//		          md2->curve = gvarMenuItem( 12*FW, y, md2->curve, -100, 100, attr /*( m_posHorz==1 ? attr : 0 )*/, event ) ;
+//						}
+					else
+					{
+						if ( md2->curve <= -28 )
+						{
+							int8_t value = md2->curve + 128 ;	// 0 to 100
+				lcd_outdezAtt(FW*17,y,value,attr|LEFT);
+				if(attr) CHECK_INCDEC_H_MODELVAR_0( value, 100 ) ;
+							md2->curve = value - 128 ;
 						}
 						else
 						{
-							if ( md2->curve <= -28 )
+							put_curve( 2*FW, y, md2->curve, attr ) ;
+			if(attr)
 							{
-								int8_t value = md2->curve + 128 ;	// 0 to 100
-            		lcd_outdezAtt(FW*17,y,value,attr|LEFT);
-            		if(attr) CHECK_INCDEC_H_MODELVAR_0( value, 100 ) ;
-								md2->curve = value - 128 ;
-							}
-							else
-							{
-								put_curve( 2*FW, y, md2->curve, attr ) ;
-          	  	if(attr)
+					CHECK_INCDEC_H_MODELVAR( md2->curve, -MAX_CURVE5-MAX_CURVE9-1-1-1, MAX_CURVE5+MAX_CURVE9+7-1+1+1+1);
+								if ( event==EVT_KEY_FIRST(KEY_MENU) || event == EVT_KEY_BREAK(BTN_RE)  )
 								{
-        		  		CHECK_INCDEC_H_MODELVAR( md2->curve, -MAX_CURVE5-MAX_CURVE9-1-1-1, MAX_CURVE5+MAX_CURVE9+7-1+1+1+1);
-									if ( event==EVT_KEY_FIRST(KEY_MENU) || event == EVT_KEY_BREAK(BTN_RE)  )
+									if ( md2->curve>=CURVE_BASE )
 									{
-										if ( md2->curve>=CURVE_BASE )
-										{
-          	  	    	s_curveChan = md2->curve-CURVE_BASE;
-	          		      pushMenu(menuProcCurveOne);
-										}
-										if ( md2->curve < 0 )
-										{
-          	  	    	s_curveChan = -md2->curve-1 ;
-	          		      pushMenu(menuProcCurveOne);
-										}
+					s_curveChan = md2->curve-CURVE_BASE;
+					  pushMenu(menuProcCurveOne);
 									}
-          	  	}
-        		  }
-						}
+									if ( md2->curve < 0 )
+									{
+					s_curveChan = -md2->curve-1 ;
+					  pushMenu(menuProcCurveOne);
+									}
+								}
+			}
+			  }
+					}
+			}				
         break ;
 
         case 8:
@@ -9620,33 +9738,34 @@ void menuProcMixOne(uint8_t event)
             break;
 
         case 9:
-					{	
-						uint8_t b = 1 ;
-						lcd_puts_P( FW, y, PSTR(STR_MODES) ) ;
+			{	
+				uint8_t b = 1 ;
+				lcd_puts_P( FW, y, PSTR(STR_MODES) ) ;
 //            lcd_puts_Pleft( y,XPSTR("\001MODES"));
-						
-						if ( attr )
+				
+				if ( attr )
+				{
+					Columns = 6 ;
+				}
+			
+				for ( uint8_t p = 0 ; p<MAX_MODES+1 ; p++ )
+				{
+					uint8_t z = md2->modeControl ;
+				lcd_putcAtt( (9+p)*(FW+1), y, '0'+p, ( z & b ) ? 0 : INVERS ) ;
+					if( attr && ( g_posHorz == p ) )
+					{
+						lcd_rect( (9+p)*(FW+1)-1, y-1, FW+2, 9 ) ;
+						if ( event==EVT_KEY_BREAK(KEY_MENU) || event==EVT_KEY_BREAK(BTN_RE) ) 
 						{
-							Columns = 6 ;
-						}
-  					
-						for ( uint8_t p = 0 ; p<MAX_MODES+1 ; p++ )
-						{
-							uint8_t z = md2->modeControl ;
-    					lcd_putcAtt( (9+p)*(FW+1), y, '0'+p, ( z & b ) ? 0 : INVERS ) ;
-							if( attr && ( g_posHorz == p ) )
-							{
-								lcd_rect( (9+p)*(FW+1)-1, y-1, FW+2, 9 ) ;
-								if ( event==EVT_KEY_BREAK(KEY_MENU) || event==EVT_KEY_BREAK(BTN_RE) ) 
-								{
-									md2->modeControl ^= b ;
-      						eeDirty(EE_MODEL) ;
-    							s_editMode = false ;
-								}
-							}
-							b <<= 1 ;
+							md2->modeControl ^= b ;
+					eeDirty(EE_MODEL) ;
+						s_editMode = false ;
 						}
 					}
+					b <<= 1 ;
+				}
+			}
+	//  } wrong closing brace here from Mikes source			}
         break ;
 
         case 10:
@@ -10307,7 +10426,24 @@ extern uint8_t swOn[] ;
 										put_curve( 18*FW+2+x, 3*FH, pmd->curve, 0 ) ;
 									break ;
 									case 1 :
-				      	    gvarMenuItem( FW*21+1+x, 3*FH, pmd->curve, -100, 100, 0, 0 ) ;
+									{	
+										int16_t ivalue = pmd->curve ;
+										if ( pmd->extDiff == 0 )	// old setup
+										{
+											if (ivalue >= 126 || ivalue <= -126)
+											{
+												// Gvar
+												ivalue = (uint8_t)ivalue - 126 ; // 0 to 4
+												ivalue += 510 ;
+											}
+										}
+										else
+										{
+											ivalue += 510 ;
+										}
+										gvarDiffValue( FW*21+1+x, 3*FH, ivalue, 0, 0 ) ;
+//				      	    gvarMenuItem( FW*21+1+x, 3*FH, pmd->curve, -100, 100, 0, 0 ) ;
+									}
 									break ;
 									case 2 :
             			lcd_outdezAtt( FW*21+1+x, 3*FH, pmd->curve + 128, 0 ) ;
@@ -18494,32 +18630,38 @@ void menuProcDate(uint8_t event)
 			TimeToSet.Time[5] = (uint8_t) EntryTime.year ;
 			TimeToSet.Time[6] = EntryTime.year >> 8 ;
 #endif
-#ifdef REVX
+			
+#if defined	PCBSKY && !defined SMALL
+	#if defined REVX 
+		#if defined JR9303
+			writeExtRtc( (uint8_t *) &TimeToSet.Time[0] ) ;
+		#else	
 			writeRTC( (uint8_t *) &TimeToSet.Time[0] ) ;
-#else
-#ifdef PCBSKY
-#ifndef ARUNI
+		#endif		
+	#else // !REVX
+		#ifndef ARUNI
 			if ( g_eeGeneral.ar9xBoard == 0 )
 			{
 				write_coprocessor( (uint8_t *) &TimeToSet, 8 ) ;
 			}
 			else
-#endif
 			{
-#ifndef SMALL
-				writeExtRtc( (uint8_t *) &TimeToSet.Time[0] ) ;
-#endif
+		#else
+			writeExtRtc( (uint8_t *) &TimeToSet.Time[0] ) ;
+		#endif
 			}
-#endif
+	#endif //REVX					
+#endif //PCBSKY && ! SMALL
+
 #if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 			rtcSetTime( &EntryTime ) ;
 #endif
-#endif
+
 #ifdef PCBLEM1
 			writeExtRtc( (uint8_t *) &TimeToSet.Time[0] ) ;
 #endif
-      killEvents(event);
-			s_editMode = 0 ;
+		killEvents(event);
+		s_editMode = 0 ;
     break;
 	}		 
 //#if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D)
@@ -18601,7 +18743,7 @@ void menuProcDate(uint8_t event)
 					lcd_outdezNAtt( 9*FW-2+DATE_OFF_0, 7*FH, EntryTime.year, attr, 4 ) ;
 			  	if(sub==subN)  EntryTime.year = checkIncDec16( EntryTime.year, 0, 2999, 0 ) ;
 				break ;
-#ifdef REVX
+#if defined (REVX) && !defined (JR9303)
 				case 7 :
 					uint8_t previous = g_eeGeneral.rtcCal ;
 			  	lcd_puts_P( 12*FW+DATE_OFF_0, 5*FH, PSTR(STR_CAL) );

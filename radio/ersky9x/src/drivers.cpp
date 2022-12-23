@@ -2309,12 +2309,20 @@ void read_adc()
 	Analog_values[1] = ADC->ADC_CDR9 ;
 	Analog_values[2] = ADC->ADC_CDR14 ;
 	Analog_values[3] = ADC->ADC_CDR1 ;
+	
 #ifndef REVX
 	if ( g_eeGeneral.ar9xBoard == 0 )
 	{
 #endif
+
+#ifdef JR9303  // lH & RH slider mapping to ADC input channels 
+		Analog_values[4] = ADC->ADC_CDR3 ;
+		Analog_values[6] = ADC->ADC_CDR5 ;
+#else
 		Analog_values[4] = ADC->ADC_CDR5 ;
 		Analog_values[6] = ADC->ADC_CDR3 ;
+#endif		
+
 #ifndef REVX
 	}
 	else
@@ -2323,6 +2331,7 @@ void read_adc()
 		Analog_values[4] = ADC->ADC_CDR3 ;
 	}
 #endif
+
 	Analog_values[5] = ADC->ADC_CDR13 ;
 	Analog_values[7] = ADC->ADC_CDR4 ;
 //#endif

@@ -806,7 +806,7 @@ void ee32LoadModel(uint8_t id)
   	FRSKY_setModelAlarms();
   }
 
-#ifdef REVX
+#if defined (REVX) && !defined (JR9303)
 	if ( g_model.telemetryRxInvert )
 	{
 		setMFP() ;

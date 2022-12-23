@@ -514,7 +514,8 @@ PACK(typedef struct te_MixData {
 	uint8_t	switchSource ;
   uint8_t extWeight:2 ;
   uint8_t extOffset:2 ;
-	uint8_t	res:4 ;
+	uint8_t	extDiff:1 ;
+	uint8_t	res:3 ;
 	uint8_t	res1 ;
 }) SKYMixData;
 

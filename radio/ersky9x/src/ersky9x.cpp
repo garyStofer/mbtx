@@ -109,6 +109,7 @@
 #include "X9D/i2c_ee.h"
 
 
+
 extern "C" uint8_t USBD_HID_SendReport(USB_OTG_CORE_HANDLE  *pdev, 
                                  uint8_t *report,
                                  uint16_t len) ;
@@ -3960,7 +3961,7 @@ extern void sdInit( void ) ;
 
 #ifdef PCBSKY
 	start_sound() ;
-#ifdef REVX
+#if defined (REVX ) && !defined (JR9303)
 	if ( g_model.telemetryRxInvert )
 	{
 		setMFP() ;
@@ -6761,25 +6762,28 @@ extern uint32_t TotalExecTime ;
 		sdPoll10mS() ;
 #endif
 
- #ifdef PCBSKY
+#ifdef PCBSKY
 		if ( ++coProTimer > 9 )
 		{
 			coProTimer -= 10 ;
+
+	#if defined (JR9303) && !defined (SMALL)
+			readExtRtc() ;
+	#else
 			
-#ifndef REVX
+		#ifndef REVX
 	 		if ( g_eeGeneral.ar9xBoard )
 			{
 				// Read external RTC here
-#ifndef SMALL
-extern void readExtRtc() ;
+			#ifndef SMALL
 				readExtRtc() ;
-#endif
+			#endif
 			}	
 			else
-#endif
+		#endif// nREVX
 			{
-#ifndef ARUNI
-#ifndef REVX
+	#ifndef ARUNI
+		#ifndef REVX
 				if ( CoProcAlerted == 0 )
 				{
 					if ( Coproc_valid == 1 )
@@ -6795,26 +6799,38 @@ extern void readExtRtc() ;
 					}
 				}
 				read_coprocessor() ;
-#else
-				readRTC() ;
-#endif  // nREVX
-#endif  // nARUNI
+		#else
+			#ifndef JR9303
+			readRTC() ;  // if REVX
+			#endif
+		#endif  // nREVX
+	#endif  // nARUNI
+
 			}
+#endif
+// end jr9303 && !SMALL
 		}
 
+	#ifndef SMALL
+		#if defined (JR9303) && defined (REVX) 
+				pollForRtcComplete() ;
+		#else		
 
-#ifndef SMALL
-#ifndef REVX
-	 	if ( g_eeGeneral.ar9xBoard )
-		{
-extern void pollForRtcComplete() ;
-			pollForRtcComplete() ;
-		}
-#endif
-#endif
+			#ifndef REVX
+				if ( g_eeGeneral.ar9xBoard )
+				{
 
-#endif
-
+					pollForRtcComplete() ;
+				}
+			#endif
+		#endif
+		// end jr9303
+	#endif
+		//end small
+#endif 
+	// endif PCBSKY
+		
+		
 #ifdef PCBLEM1
 		if ( g_eeGeneral.externalRtcType == 1 )
 		{

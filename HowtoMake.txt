@@ -1,0 +1,6 @@
+See README.md for info how to build 
+
+Specifically to build for gary's board use 
+make REVB=1 REVX=1 JR9303=1 -- this creates output file ersky9x_jr_rom.bin
+use EEP to load the .bin fiole onto the HW 
+

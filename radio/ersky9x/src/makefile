@@ -28,7 +28,8 @@
 # X9LiteS      make PCB=X9D PCBX9LITE=1 X9LS=1 
 # 9Xtreme      make PCB=9XT
 # SKY board    make REVB=1 SMALL=1
-# 9XR_PRO      make REVB=1 REVX=1
+# ** 9XR_PRO      make REVB=1 REVX=1  
+# ** 9XR_PRO with ds3231 RTC    make REVB=1 REVX=1  JR9303=1
 # AR9X board   make REVB=1
 # Horus X12S   make PCB=X12D
 # Jumper T16   make PCB=X10 PCBT16=1
@@ -208,7 +209,7 @@ else ifeq ($(PCBLEM1), 1)
  EXT_MOD=Lemon
  UDEFS = -Dstm32f103
  UDEFS = -DSTM32F10X_HD
-else
+else #the pcbsky board -- aruni etc
  USB_JOYSTICK = 1
  BASIC = 1
  CPPDEFS += -DBASIC 
@@ -222,13 +223,22 @@ else
   UDEFS  += -D__SAM3X8E__
   EXT_MOD=DUE
   CPPDEFS += -DPCBDUE 
+ ##   my ARUNI MKII board with DS3231 RTC
  else ifeq ($(REVX), 1)
-  PROJECT = ersky9xr
   LDSCRIPT = sam3s8c_flash.ld
   UDEFS = -Dat91sam3s8
+  ifeq ($(JR9303), 1)
+   CPPDEFS += -DJR9303
+   PROJECT = ersky9x_jr
+   EXT_MOD=REVB-X-JR
+  else 
+     PROJECT = ersky9xr
+	 EXT_MOD=REVB-X
+  endif
+  
   CPPDEFS += -DREVX
   CPPDEFS += -DXFIRE
-  EXT_MOD=REVB-X
+ ## 
  else ifeq ($(SMALL), 1)
   PROJECT = ersky9xs
   LDSCRIPT = sam3s4c_flash.ld
@@ -1237,6 +1247,7 @@ clean:
 	-rm -f obj_x12d/*.*
 	-rm -f obj_ersky9xs/*.*
 	-rm -f obj_ersky9xr/*.*
+	-rm -f obj_ersky9x_jr/*.*
 	-rm -f obj_ersky9x/*.*
 	-rm -f obj_sky9XT/*.*
 	-rm -f obj_x7/*.*

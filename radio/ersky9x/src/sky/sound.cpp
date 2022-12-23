@@ -54,14 +54,10 @@
 
 
 void start_sound( void ) ;
-//void buzzer_on( void ) ;
-//void buzzer_off( void ) ;
-//void buzzer_sound( uint8_t time ) ;
 void start_dactimer( void ) ;
 void init_dac( void ) ;
 extern "C" void DAC_IRQHandler( void ) ;
 void disp_mem( register uint32_t address ) ;
-//void end_sound( void ) ;
 void tone_start( register uint32_t time ) ;
 void tone_stop( void ) ;
 void init_twi( void ) ;
@@ -74,7 +70,7 @@ void i2c_check_for_request( void ) ;
 extern uint32_t Master_frequency ;
 extern uint8_t CurrentVolume ;
 
-//volatile uint8_t Buzzer_count ;
+
 
 uint8_t CoProcTimer ;
 uint8_t AudioVoiceUnderrun ;
@@ -87,12 +83,8 @@ struct t_sound_globals Sound_g ;
 
 struct t_VoiceBuffer VoiceBuffer[NUM_VOICE_BUFFERS] ;
 
-//#define SOUND_NONE	0
-//#define SOUND_TONE	1
-//#define SOUND_VOICE	2
-//#define SOUND_STOP	3
-
 struct t_VoiceBuffer *PtrVoiceBuffer[NUM_VOICE_BUFFERS] ;
+/*
 //uint8_t SoundType ;
 
 	 
@@ -155,7 +147,7 @@ struct t_VoiceBuffer *PtrVoiceBuffer[NUM_VOICE_BUFFERS] ;
 //2794, 2960, 3136, 3322, 3520 ,3729, 3951, 4186
 //} ;
 
-
+*/
 // Sound routines
 
 void start_sound()
@@ -167,61 +159,22 @@ void start_sound()
 	setVolume( 2 ) ;
 
 #ifndef REVA
-//#ifndef REVX	
-//	register Pio *pioptr ;
-//	pioptr = PIOA ;
-//	pioptr->PIO_CODR = 0x02000000L ;	// Set bit A25 OFF
-//	pioptr->PIO_PER = 0x02000000L ;		// Enable bit A25 (Stock buzzer)
-//	pioptr->PIO_OER = 0x02000000L ;		// Set bit A25 as output
-//#endif
-#else
+;
+#else  // for REVA
 	register Pio *pioptr ;
 	pioptr = PIOA ;
 	pioptr->PIO_CODR = 0x00010000L ;	// Set bit A16 OFF
 	pioptr->PIO_PER = 0x00010000L ;		// Enable bit A16 (Stock buzzer)
 	pioptr->PIO_OER = 0x00010000L ;		// Set bit A16 as output
 #endif
+	
+//??????	
 #ifdef REVX	
 	configure_pins( PIO_PC26, PIN_ENABLE | PIN_LOW | PIN_OUTPUT | PIN_PORTC | PIN_NO_PULLUP ) ;
 	audioOn() ;
 #endif
 }
 
-//#ifndef TONE_MODE_2
-//#ifndef REVA
-////void buzzer_on()
-////{
-//// #ifndef REVX
-////	PIOA->PIO_SODR = 0x02000000L ;	// Set bit A25 ON
-//// #endif
-////}
-
-////void buzzer_off()
-////{
-//// #ifndef REVX
-////	PIOA->PIO_CODR = 0x02000000L ;	// Set bit A25 ON
-//// #endif
-////}
-//#else
-//void buzzer_on()
-//{
-//	PIOA->PIO_SODR = 0x00010000L ;	// Set bit A16 ON
-//}
-
-//void buzzer_off()
-//{
-//	PIOA->PIO_CODR = 0x00010000L ;	// Set bit A16 ON
-//}
-//#endif
-
-//void buzzer_sound( uint8_t time )
-//{
-// #ifndef REVX
-//	buzzer_on() ;
-//	Buzzer_count = time ;
-// #endif
-//}
-//#endif // TONE_MODE_2
 
 void set_frequency( uint32_t frequency )
 {
@@ -295,6 +248,7 @@ void init_dac()
 	dacptr->DACC_CHER	= 2 ;							// Enable channel 1
 #endif
 	dacptr->DACC_CDR = 2048 ;						// Half amplitude
+/*		
 // Data for PDC must NOT be in flash, PDC needs a RAM source.
 //#ifndef TONE_MODE_2
 //#ifndef SIMU
@@ -305,10 +259,12 @@ void init_dac()
 //	dacptr->DACC_TNCR = 50 ;	// words, 100 16 bit values
 //	dacptr->DACC_PTCR = DACC_PTCR_TXTEN ;
 //#endif // TONE_MODE_2
+*/		
 	NVIC_SetPriority( DACC_IRQn, 4 ) ; // Lower priority interrupt
 	NVIC_EnableIRQ(DACC_IRQn) ;
 }
 
+#ifdef ThisIsNotUsed // commented out stuff
 //#ifndef SIMU
 //extern "C" void DAC_IRQHandler()
 //{
@@ -364,6 +320,7 @@ void init_dac()
 //	}
 //}
 //#endif
+#endif // Not Used
 
 #ifndef SIMU
 extern "C" void DAC_IRQHandler()
@@ -414,6 +371,8 @@ extern "C" void DAC_IRQHandler()
 	{
 		DACC->DACC_IDR = DACC_IDR_ENDTX ;
 	}
+
+/*
 //#ifndef TONE_MODE_2
 //	else if ( Sound_g.VoiceActive == 0 )
 //	{
@@ -428,10 +387,12 @@ extern "C" void DAC_IRQHandler()
 //		}
 //	}
 //#endif // TONE_MODE_2
+*/
 }
-#endif
+#endif // #ifndef SIMU
 
 
+/*
 //void end_sound()
 //{
 //	DACC->DACC_IDR = DACC_IDR_ENDTX ;		// Kill interrupt
@@ -442,7 +403,9 @@ extern "C" void DAC_IRQHandler()
 //	PMC->PMC_PCER0 &= ~0x00080000L ;		// Disable peripheral clock to TWI0
 //  PMC->PMC_PCER0 &= ~0x40000000L ;		// Disable peripheral clock to DAC
 //}
-
+*/
+	
+	
 #ifdef REVX
 void audioOn( void )
 {
@@ -470,7 +433,7 @@ void sound_5ms()
 	}
 
 	dacptr = DACC ;
-
+/*
 //#ifndef TONE_MODE_2
 //	if ( Sound_g.Tone_ms_timer > 0 )
 //	{
@@ -480,6 +443,8 @@ void sound_5ms()
 //	if ( Sound_g.Tone_ms_timer == 0 )
 //	{
 //#endif // TONE_MODE_2
+*/
+		
 		if ( Sound_g.VoiceRequest )
 		{
 			// audioOn() ;
@@ -510,7 +475,7 @@ void sound_5ms()
 			}
 			return ;
 		}
-		
+/*
 //#ifndef TONE_MODE_2
 //		if ( ( Sound_g.VoiceActive ) || ( ( Voice.VoiceQueueCount ) && sd_card_ready() ) )
 //		{
@@ -563,71 +528,9 @@ void sound_5ms()
 //		}
 //	}
 //#endif // TONE_MODE_2
+*/
 }
 
-//const uint8_t SwVolume_scale[NUM_VOL_LEVELS] = 
-//{
-////	 0,  15,  30,   40,   47,  55,  64,  74,  84,  94,  104,  114,
-//	 0,  5,  10,   15,   30,  45,  60,  74,  84,  94,  104,  114,
-//	128, 164, 192, 210, 224, 234, 240, 244, 248, 251, 253, 255 	
-//} ;
-
-//uint16_t swVolumeLevel()
-//{
-//	return SwVolume_scale[CurrentVolume] ;
-//}
-
-//void wavU8Convert( uint8_t *src, uint16_t *dest , uint32_t count )
-//{
-//	if ( g_eeGeneral.softwareVolume )
-//	{
-//		uint32_t multiplier ;
-//		int32_t value ;
-//		multiplier = SwVolume_scale[CurrentVolume] * 256 ;
-//		while( count-- )
-//		{
-//			value = (int8_t) (*src++ - 128 ) ;
-//			value *= multiplier ;
-//			value += 32768 * 256 ;
-//			*dest++ = value >> 12 ;
-//		}
-//	}
-//	else
-//	{
-//		while( count-- )
-//		{
-//			*dest++ = *src++ << 4 ;
-//		}
-//	}
-//}
-
-//void wavU16Convert( uint16_t *src, uint16_t *dest , uint32_t count )
-//{
-//	if ( g_eeGeneral.softwareVolume )
-//	{
-//		uint32_t multiplier ;
-//		int32_t value ;
-//		multiplier = SwVolume_scale[CurrentVolume] ;
-//		while( count-- )
-//		{
-//			value = (int16_t) *src++ ;
-//			value *= multiplier ;
-//			value += 32768 * 256 ;
-//			*dest++ = value >> 12 ;
-//		}
-//	}
-//	else
-//	{
-//		while( count-- )
-//		{
-//			*dest++ = (uint16_t)( (int16_t )*src++ + 32768) >> 4 ;
-//		}
-//	}
-//}
-
-//uint16_t g_timeAppendVoice ;
-//uint16_t g_timeAppendMaxVoice ;
-//uint16_t g_timeAppendtime ;
 
 void startVoice( uint32_t count )		// count of filled in buffers
 {
@@ -724,55 +627,6 @@ void appendVoice( uint32_t index )		// index of next buffer
 //	g_timeAppendVoice = t10ms ;
 }
 
-// frequency in Hz, time in mS
-//void playTone( uint32_t frequency, uint32_t time )
-//{
-//	Sound_g.Next_frequency_increment = 0 ;
-//	Sound_g.Next_freq = frequency ;
-//	Sound_g.Sound_time = time ;
-////	set_frequency( frequency ) ;
-////	Tone_ms_timer = ( time + 4 ) / 5 ;
-////	tone_start( 0 ) ;
-//}
-
-//uint32_t unlockTone()
-//{
-//	if ( Sound_g.Sound_time == 0 )
-//	{
-//		Sound_g.toneLock = 0 ;
-//		return 1 ;
-//	}
-//	return 0 ;
-//}
-
-//#ifndef TONE_MODE_2
-//uint32_t queueTone( uint32_t frequency, uint32_t time, uint32_t frequency_increment, uint32_t lock )
-//{
-//	if ( Sound_g.Sound_time == 0 )
-//	{
-//		Sound_g.Next_freq = frequency ;
-//		Sound_g.Next_frequency_increment = frequency_increment ;
-//		Sound_g.Sound_time = time ;
-//		Sound_g.toneLock = lock ;
-//		return 1 ;
-//	}
-//	return 0 ;	
-//}
-
-//// Time is in milliseconds
-//void tone_start( register uint32_t time )
-//{
-//  PMC->PMC_PCER0 |= 0x40000000L ;		// Enable peripheral clock to DAC
-//	Sound_g.Tone_timer = Sound_g.Frequency * time / 1000 ;
-//	DACC->DACC_IER = DACC_IER_ENDTX ;
-//}
-
-//void tone_stop()
-//{
-//	DACC->DACC_IDR = DACC_IDR_ENDTX ;	// Disable interrupt
-//	Sound_g.Tone_timer = 0 ;	
-//}
-//#endif // TONE_MODE_2
 
 
 uint32_t TwiHighSpeed ;
@@ -791,9 +645,9 @@ void init_twi()
 	 
 	/* Configure PIO */
 	pioptr = PIOA ;
-  pioptr->PIO_ABCDSR[0] &= ~0x00000018 ;	// Peripheral A
-  pioptr->PIO_ABCDSR[1] &= ~0x00000018 ;	// Peripheral A
-  pioptr->PIO_PDR = 0x00000018 ;					// Assign to peripheral
+	pioptr->PIO_ABCDSR[0] &= ~0x00000018 ;	// Peripheral A
+	pioptr->PIO_ABCDSR[1] &= ~0x00000018 ;	// Peripheral A
+	pioptr->PIO_PDR = 0x00000018 ;					// Assign to peripheral
 	
 //	timing = Master_frequency * 8 / 2000000 ;		// 4uS high and low (125 kHz)
 	timing = Master_frequency * 5 / 2000000 ;		// 2.5uS high and low (200 kHz)
@@ -811,61 +665,58 @@ void init_twi()
 	
 	TWI0->TWI_CR = TWI_CR_MSEN | TWI_CR_SVDIS ;		// Master mode enable
 	TWI0->TWI_MMR = 0x002F0000 ;		// Device 5E (>>1) and master is writing
-  NVIC_SetPriority(TWI0_IRQn, 3 ) ;
+	NVIC_SetPriority(TWI0_IRQn, 3 ) ;
 	NVIC_EnableIRQ(TWI0_IRQn) ;
 }
+// not needed
+//static int8_t Volume_required ;
+//static uint8_t Volume_read_pending ;
 
-static int8_t Volume_required ;
-static uint8_t Volume_read_pending ;
  #ifndef REVX
 static uint8_t CoProc_read_pending ;
 static uint8_t CoProc_write_pending ;
 static uint8_t CoProc_appgo_pending ;
-#endif
+ #endif
 
-#ifdef REVX
+///* for microchip RTC
+#if defined (REVX) && !defined (JR9303)
 uint8_t Rtc_read_pending ;
 static uint8_t Rtc_write_pending ;
 static uint8_t MFPsetting = 0 ;
 uint8_t CALsetting = 0 ;
-#endif
+#endif //*/
 
 uint8_t Volume_read ;
 uint8_t Coproc_read ;
 int8_t Coproc_valid ;
 int8_t Rtc_valid ;
+
+
+
 //static uint8_t Twi_mode ;
 uint8_t TwiOperation ;
 static uint8_t *Twi_read_address ;
-//static uint8_t TwiDevice ;
-//const uint8_t *CoProgBufPtr ;
-//uint8_t Program_coprocessor ;
-//uint8_t Program_blocks_written ;
 
-//#define TWI_MODE_WRITE	0
-//#define TWI_MODE_READ		1
-
-//#define TWI_VOLUME	1
-//#define TWI_COPROC	2
-
-#define TWI_NONE		    	0
+#define TWI_NONE		   	0
 #define TWI_READ_VOL    	1
-#define TWI_WRITE_VOL     2
- #ifndef REVX
-#define TWI_READ_COPROC   3
-#define TWI_COPROC_APPGO  4
-#define TWI_WAIT_STOP		  5
+#define TWI_WRITE_VOL     	2
+
+#ifndef REVX
+#define TWI_READ_COPROC   	3
+#define TWI_COPROC_APPGO  	4
+#define TWI_WAIT_STOP		5
 #define TWI_WRITE_COPROC	6
 #endif
-#define TWI_WAIT_COMP		  7
-#define TWI_READ_RTC		  8
-#define TWI_WRITE_RTC		  9
+	
+#define TWI_WAIT_COMP		7
+#define TWI_READ_RTC		8
+#define TWI_WRITE_RTC		9
 #define TWI_WAIT_RTCSTOP	10
-#define TWI_WRITE_MFP     11
+#define TWI_WRITE_MFP     	11
 
 // General I2C operation
-#define TWI_WRITE_ONE			12
-#define TWI_READ_ONE			13
+#define TWI_WRITE_ONE		12
+#define TWI_READ_ONE		13
 #define TWI_WRITE_BUFFER	14
 #define TWI_READ_BUFFER		15
 #define TWI_WRITE_COMMAND_BUFFER    16
@@ -877,54 +728,39 @@ static uint8_t *Twi_read_address ;
 // Commands to the coprocessor bootloader/application
 #define TWI_CMD_PAGEUPDATE        	0x01	// TWI Command to program a flash page
 #define TWI_CMD_EXECUTEAPP        	0x02	// TWI Command to jump to the application program
-#define TWI_CMD_SETREAD_ADDRESS			0x03	// TWI Command to set address to read from
+#define TWI_CMD_SETREAD_ADDRESS		0x03	// TWI Command to set address to read from
 #define TWI_CMD_WRITE_DATA         	0x04	// TWI Command send data to the application
-#define TWI_CMD_REBOOT							0x55	// TWI Command to restart back in the bootloader
+#define TWI_CMD_REBOOT				0x55	// TWI Command to restart back in the bootloader
 
+#define RTC_SIZE				8
+
+#if defined (REVX) && !defined (JR9303)
 
 static const uint8_t Volume_scale[NUM_VOL_LEVELS] = 
 {
 	 0,  2,  4,   6,   8,  10,  13,  17,  22,  27,  33,  40,
 	64, 82, 96, 105, 112, 117, 120, 122, 124, 125, 126, 127 	
 } ;
-
- #ifndef REVX
-#define COPROC_RX_BUXSIZE		22
-#endif
-#define RTC_RX_BUXSIZE			10
-#define RTC_SIZE						8
  
- #ifndef REVX
+
+#define RTC_RX_BUXSIZE			10  // for microchip RTC
+uint8_t Rtc_status[RTC_RX_BUXSIZE] ;  // for microchip RTC
+uint8_t *Rtc_write_ptr ;
+uint32_t Rtc_write_count ;
+uint8_t RtcConfig[8] ;		// For initial config and writing to RTC
+
+#endif
+
+#ifndef REVX
+#define COPROC_RX_BUXSIZE		22
 uint8_t Co_proc_status[COPROC_RX_BUXSIZE] ;
 uint8_t *Co_proc_write_ptr ;
 uint32_t Co_proc_write_count ;
 #endif
 
-uint8_t Rtc_status[RTC_RX_BUXSIZE] ;
-#ifdef REVX
-uint8_t *Rtc_write_ptr ;
-uint32_t Rtc_write_count ;
-uint8_t RtcConfig[8] ;		// For initial config and writing to RTC
-// 0x80, 0, 0, 0x08, 0, 0, 0, 0x80
-#endif
-
-
-#ifndef SMALL
-static uint32_t fromBCD( uint8_t bcd_value )
-{
-	return ( ( ( bcd_value & 0xF0 ) * 10 ) >> 4 ) + ( bcd_value & 0x0F ) ;
-}
-
-static uint32_t toBCD( uint32_t value )
-{
-	div_t qr ;
-	qr = div( value, 10 ) ;
-	return ( qr.quot << 4 ) + qr.rem ;
-}
-#endif
 
 // General I2C operation
-//#define GENERAL_I2C_WRITE_ONE								0
+//#define GENERAL_I2C_WRITE_ONE				  0
 //#define GENERAL_I2C_READ_ONE                1
 //#define GENERAL_I2C_WRITE_BUFFER            2
 //#define GENERAL_I2C_READ_BUFFER             3
@@ -947,15 +783,27 @@ struct t_I2C_request
 	volatile uint8_t done ;
 } ;
 
-#define MMR_ADDRESS_COUNT_MASK	0x00000300
 
 struct t_I2C_request *I2cHeadPointer ;
 struct t_I2C_request *I2cTailPointer ;
 struct t_I2C_request *I2cCurrentPointer ;
 
 #ifndef SMALL
-struct t_I2C_request GeneralI2cRequest ;
-struct t_I2C_request LedI2cRequest ;
+
+static uint32_t fromBCD( uint8_t bcd_value )
+{
+	return ( ( ( bcd_value & 0xF0 ) * 10 ) >> 4 ) + ( bcd_value & 0x0F ) ;
+}
+
+static uint32_t toBCD( uint32_t value )
+{
+	div_t qr ;
+	qr = div( value, 10 ) ;
+	return ( qr.quot << 4 ) + qr.rem ;
+}
+
+// struct t_I2C_request GeneralI2cRequest ;
+// struct t_I2C_request LedI2cRequest ;
 struct t_I2C_request ExtRtcI2cRequest ;
 struct t_I2C_request ExtRtcI2cWriteRequest ;
 
@@ -977,100 +825,13 @@ void submitI2cRequest( struct t_I2C_request *ptr )
 	i2c_check_for_request() ;
 	NVIC_EnableIRQ(TWI0_IRQn) ;
 }
-#endif
-
-#ifndef SMALL
-uint8_t Mcp23008InitData[7] = {0, 0, 0, 0, 0, 0, 0 } ;
-uint8_t LedInitData[14] = {1, 0, 5, 5, 5, 0, 0, 0 ,0 ,0, 0xFF, 0, 0xAA, 0xAA } ;
-uint8_t LedLightData[3] ;
-#ifndef REVX
+	
+//  needed  for DS3231 RTC
+#if !defined  (REVX) || defined (JR9303)
 uint8_t ExternalRtc[RTC_SIZE] ;
-#endif
-#endif
 
-#ifndef SMALL
-void initLed()
-{
-	LedI2cRequest.mmr = 0x00480100 ;	// writing, 1 byte addr
-	LedI2cRequest.address = 0x80 ;
-	LedI2cRequest.dataSize = 14 ;
-	LedI2cRequest.dataBuffer = LedInitData ;
-	LedI2cRequest.operationType = TWI_WRITE_BUFFER ;
-	LedI2cRequest.speed = TWI_HIGH_SPEED ;
-	submitI2cRequest( &LedI2cRequest ) ;
-}
-
-void writeLed( uint8_t value )
-{
-	LedI2cRequest.mmr = 0x00480100 ;	// writing, 1 byte addr
-	LedI2cRequest.address = 0x82 ;
-	LedLightData[0] = value ;
-	LedLightData[1] = value ;
-	LedLightData[2] = value ;
-	LedI2cRequest.dataSize = 3 ;
-	LedI2cRequest.dataBuffer = LedLightData ;
-	LedI2cRequest.operationType = TWI_WRITE_BUFFER ;
-	LedI2cRequest.speed = TWI_HIGH_SPEED ;
-	submitI2cRequest( &LedI2cRequest ) ;
-}
-
-void readLed( uint8_t *ptrData )
-{
-	LedI2cRequest.mmr = 0x00481100 ;	// reading, 1 byte addr
-	LedI2cRequest.address = 0x80 ;
-	LedI2cRequest.dataBuffer = ptrData ;
-	LedI2cRequest.operationType = TWI_READ_ONE ;
-	submitI2cRequest( &LedI2cRequest ) ;
-}
-
-void init23008()
-{
-	GeneralI2cRequest.mmr = 0x00200100 ;	// writing, 1 byte addr
-	GeneralI2cRequest.address = 0 ;
-	GeneralI2cRequest.dataSize = 7 ;
-	GeneralI2cRequest.dataBuffer = Mcp23008InitData ;
-	Mcp23008InitData[0] = 3 ;	// 2 inputs
-	Mcp23008InitData[6] = 3 ;	// Pullups
-	GeneralI2cRequest.operationType = TWI_WRITE_BUFFER ;
-	GeneralI2cRequest.speed = TWI_HIGH_SPEED ;
-	submitI2cRequest( &GeneralI2cRequest ) ;
-}
-
-void write23008( uint8_t outputs )
-{
-	GeneralI2cRequest.mmr = 0x00200100 ;	// writing, 1 byte addr
-	GeneralI2cRequest.address = 10 ;
-	GeneralI2cRequest.commandByte = outputs ;
-	GeneralI2cRequest.operationType = TWI_WRITE_ONE ;
-	GeneralI2cRequest.speed = TWI_HIGH_SPEED ;
-	submitI2cRequest( &GeneralI2cRequest ) ;
-}
-
-void read23008( uint8_t *ptrData )
-{
-	GeneralI2cRequest.mmr = 0x00201100 ;	// reading, 1 byte addr
-	GeneralI2cRequest.address = 9 ;
-	GeneralI2cRequest.dataBuffer = ptrData ;
-	GeneralI2cRequest.operationType = TWI_READ_ONE ;
-	GeneralI2cRequest.speed = TWI_HIGH_SPEED ;
-	submitI2cRequest( &GeneralI2cRequest ) ;
-}
-
-uint32_t readI2cEncoder( uint8_t *ptrData )
-{
-	GeneralI2cRequest.mmr = 0x00041000 ;	// reading, No addr
-//	GeneralI2cRequest.address = 0 ;
-	GeneralI2cRequest.dataSize = 2 ;
-	GeneralI2cRequest.dataBuffer = ptrData ;
-	GeneralI2cRequest.operationType = TWI_READ_BUFFER ;
-	GeneralI2cRequest.speed = TWI_HIGH_SPEED ;
-	submitI2cRequest( &GeneralI2cRequest ) ;
-	return 1 ;
-}
-
-#ifndef REVX
 void readExtRtc()
-{
+{// i2c addre 0x68 is DS3231
 	ExtRtcI2cRequest.mmr = 0x00681100 ;	// reading, 1 byte addr
 	ExtRtcI2cRequest.address = 0 ;
 	ExtRtcI2cRequest.dataSize = RTC_SIZE ;
@@ -1079,9 +840,8 @@ void readExtRtc()
 	ExtRtcI2cRequest.speed = TWI_LOW_SPEED ;
 	submitI2cRequest( &ExtRtcI2cRequest ) ;
 }
-#endif
 
-#ifndef REVX
+
 void pollForRtcComplete()
 {
 	if ( ExtRtcI2cRequest.done )
@@ -1101,11 +861,10 @@ void pollForRtcComplete()
 		}
 	}
 }
-#endif
 
-#ifndef REVX
+
 void writeExtRtc( uint8_t *ptr )
-{
+{// i2c addre 0x68 is DS3231
 	uint32_t year ;
 	ExtRtcI2cWriteRequest.mmr = 0x00680100 ;	// writing, 1 byte addr
 	ExtRtcI2cWriteRequest.address = 0 ;
@@ -1124,8 +883,11 @@ void writeExtRtc( uint8_t *ptr )
 	ExtRtcI2cWriteRequest.speed = TWI_LOW_SPEED ;
 	submitI2cRequest( &ExtRtcI2cWriteRequest ) ;
 }
-#endif
-#endif
+
+
+
+#endif // ifndef REVX
+#endif // ifndef SMALL
 
 // This is called from an interrupt routine, or
 // interrupts must be disabled while it is called
@@ -1136,7 +898,7 @@ void i2c_check_for_request()
 	{
 		return ;		// Busy
 	}
-//#if 0
+ 
 	TWI0->TWI_CR = TWI_CR_MSEN  ;		// Master mode enable
 
 	if ( I2cHeadPointer )
@@ -1191,10 +953,14 @@ void i2c_check_for_request()
 		}
 	}
 	else
-//#endif	 
-
+	
 	TWI0->TWI_CWGR = TwiHighSpeed ;
-	if ( Volume_required >= 0 )				// Set volume to this value
+	
+	if ( 0) // to work around the various else_ifs that can be ifdefed out
+	{
+	}
+/* not needed
+	else if ( Volume_required >= 0 )				// Set volume to this value
 	{
 		TWI0->TWI_MMR = 0x002F0000 ;		// Device 5E (>>1) and master is writing
 		TwiOperation = TWI_WRITE_VOL ;
@@ -1203,6 +969,7 @@ void i2c_check_for_request()
 		TWI0->TWI_IER = TWI_IER_TXCOMP ;
 		TWI0->TWI_CR = TWI_CR_STOP ;		// Stop Tx
 	}
+*/
 #ifndef REVX
 	else if ( CoProc_read_pending )
 	{
@@ -1224,6 +991,7 @@ void i2c_check_for_request()
 		TWI0->TWI_IER = TWI_IER_RXBUFF | TWI_IER_TXCOMP ;
 	}
 #endif
+/*
 	else if ( Volume_read_pending )
 	{
 		Volume_read_pending = 0 ;
@@ -1233,7 +1001,8 @@ void i2c_check_for_request()
 		TWI0->TWI_CR = TWI_CR_START | TWI_CR_STOP ;		// Start and stop Tx
 		TWI0->TWI_IER = TWI_IER_TXCOMP ;
 	}
- #ifndef REVX
+	*/
+#ifndef REVX
 	else if ( CoProc_appgo_pending )
 	{
 		CoProc_appgo_pending = 0 ;
@@ -1256,8 +1025,11 @@ void i2c_check_for_request()
 		TWI0->TWI_PTCR = TWI_PTCR_TXTEN ;	// Start data transfer
 		TWI0->TWI_IER = TWI_IER_TXBUFE | TWI_IER_TXCOMP ;
 	}
- #endif
- #ifdef REVX
+
+#endif  //nREVX
+//  Reading Microchip RTC at Addr 0x6F
+#if defined (REVX) && !defined (JR9303)
+	
 	else if ( Rtc_read_pending )
 	{
 		Rtc_valid = 0 ;
@@ -1314,7 +1086,9 @@ void i2c_check_for_request()
 			TWI0->TWI_IER = TWI_IER_TXBUFE | TWI_IER_TXCOMP ;
 		}
 	}
- #endif // REVX
+#endif // REVX
+ 
+	
 	if ( TwiOperation != TWI_NONE )
 	{
 		// operation started
@@ -1322,6 +1096,7 @@ void i2c_check_for_request()
 	}
 }
 
+// there is an other setVolume in er9x.cpp !!
 void setVolume( register uint8_t volume )
 {
 //	PMC->PMC_PCER0 |= 0x00080000L ;		// Enable peripheral clock to TWI0
@@ -1331,7 +1106,8 @@ void setVolume( register uint8_t volume )
 		volume = NUM_VOL_LEVELS - 1 ;		
 	}
 	CurrentVolume = volume ;
-#ifndef PCB9XT
+/* GS :not talking to a hardware volume chip 	
+#if !defined  PCB9XT
 	volume = Volume_scale[volume] ;
 	if ( g_eeGeneral.softwareVolume )
 	{
@@ -1344,18 +1120,23 @@ void setVolume( register uint8_t volume )
 	NVIC_DisableIRQ(TWI0_IRQn) ;
 	i2c_check_for_request() ;
 	NVIC_EnableIRQ(TWI0_IRQn) ;
+
 #endif
+*/
 }
 
-void read_volume()
+
+#ifndef REVX
+void write_coprocessor( uint8_t *ptr, uint32_t count )
 {
-	Volume_read_pending = 1 ;
+	Co_proc_write_ptr = ptr ;
+	Co_proc_write_count = count ;
+	CoProc_write_pending = 1 ;
 	NVIC_DisableIRQ(TWI0_IRQn) ;
 	i2c_check_for_request() ;
 	NVIC_EnableIRQ(TWI0_IRQn) ;
-}
+}	
 
-#ifndef REVX
 void read_coprocessor()
 {
 	CoProc_read_pending = 1 ;
@@ -1365,8 +1146,8 @@ void read_coprocessor()
 }	
 #endif
 
-#ifdef REVX
-
+//  deals with microchip RTC
+#if defined (REVX) && !defined (JR9303)
 
 void writeMFP()
 {
@@ -1387,7 +1168,7 @@ void clearMFP()
 	MFPsetting = 0 ;
 	writeMFP() ;
 }
-
+// deals with microchip RTC
 void setRtcCAL( uint8_t value )
 {
 	CALsetting = value ;
@@ -1397,7 +1178,7 @@ void setRtcCAL( uint8_t value )
 	NVIC_EnableIRQ(TWI0_IRQn) ;
 }
 
-
+// deals with microchip RTC
 void writeRTC( uint8_t *ptr )
 {
 	uint32_t year ;
@@ -1418,7 +1199,7 @@ void writeRTC( uint8_t *ptr )
 	i2c_check_for_request() ;
 	NVIC_EnableIRQ(TWI0_IRQn) ;
 }
-
+// deals with microchip RTC
 void readRTC()
 {
 	Rtc_read_pending = 1 ;
@@ -1426,8 +1207,15 @@ void readRTC()
 	i2c_check_for_request() ;
 	NVIC_EnableIRQ(TWI0_IRQn) ;
 }
-#endif
 
+
+#endif  // ifndef REVX
+ 
+
+	
+	
+	
+	
 uint8_t ExternalBits ;
 uint8_t I2CsendBuffer[2] ;
 
@@ -1456,26 +1244,8 @@ void setExternalOutput( uint8_t bit, uint8_t value )
 }
 
 
-#ifndef REVX
-void write_coprocessor( uint8_t *ptr, uint32_t count )
-{
-	Co_proc_write_ptr = ptr ;
-	Co_proc_write_count = count ;
-	CoProc_write_pending = 1 ;
-	NVIC_DisableIRQ(TWI0_IRQn) ;
-	i2c_check_for_request() ;
-	NVIC_EnableIRQ(TWI0_IRQn) ;
-}	
 
-//void appgo_coprocessor()
-//{
-//	CoProc_appgo_pending = 1 ;
-//	NVIC_DisableIRQ(TWI0_IRQn) ;
-//	i2c_check_for_request() ;
-//	NVIC_EnableIRQ(TWI0_IRQn) ;
-//}	
-#endif
-
+/*
 //
 //
 //void setVolume( register uint8_t volume )
@@ -1504,7 +1274,7 @@ void write_coprocessor( uint8_t *ptr, uint32_t count )
 //	}
 //	__enable_irq() ;
 //}
-
+*/
 
 #ifndef SIMU
 extern "C" void TWI0_IRQHandler()
@@ -1558,7 +1328,8 @@ extern "C" void TWI0_IRQHandler()
 	}		
 #endif
 
-#ifdef REVX
+// for Microchip RTC
+#if defined (REVX) && !defined (JR9303)
 	if ( TwiOperation == TWI_READ_RTC )
 	{
 		if ( status & TWI_SR_RXBUFF )
@@ -1579,7 +1350,7 @@ extern "C" void TWI0_IRQHandler()
 			}
 		}
 	}		
-#endif
+#endif // REVX */
 			 
 #ifndef REVX
 	if ( TwiOperation == TWI_WAIT_STOP )
@@ -1608,9 +1379,11 @@ extern "C" void TWI0_IRQHandler()
 			(void) TWI0->TWI_RHR ;			// Discard any rubbish data
 		}
 	}
+
 #endif
 
-#ifdef REVX
+// for Microchip RTC
+#if defined (REVX) && !defined (JR9303)
 	if ( TwiOperation == TWI_WAIT_RTCSTOP )
 	{
 		// Set the date and time
@@ -1633,7 +1406,7 @@ extern "C" void TWI0_IRQHandler()
 			(void) TWI0->TWI_RHR ;			// Discard any rubbish data
 		}
 	}
-#endif
+#endif 
 
 //	if ( TwiOperation == TWI_WRITE_VOL )
 //	{
@@ -1730,7 +1503,8 @@ extern "C" void TWI0_IRQHandler()
 		TwiOperation = TWI_NONE ;
 		I2cCurrentPointer->done = 1 ;
 		I2cCurrentPointer = (struct t_I2C_request *) NULL ;
-	}		
+	}	
+	/*
 //			}
 //			else
 //			{
@@ -1742,6 +1516,7 @@ extern "C" void TWI0_IRQHandler()
 //		}
 		
 //	}
+		*/
 	 
 	if ( status & TWI_SR_NACK )
 	{
@@ -1766,9 +1541,9 @@ extern "C" void TWI0_IRQHandler()
 	i2c_check_for_request() ;
 	
 }
-#endif
+#endif // ifndef SIMU
 
-
+ 
 void hapticOff()
 {
 	PWM->PWM_DIS = PWM_DIS_CHID2 ;						// Disable channel 2
@@ -1792,134 +1567,6 @@ void hapticOn( uint32_t pwmPercent )
 	pwmptr->PWM_OSC = 0x00040000 ;	// Enable output
 }
 
-// Code to file a tone buffer at 32kHz
-#if 0
 
-static uint8_t toneIndex ;
-static uint16_t toneTime ;
-
-static uint16_t toneCount ;
-
-void beginToneFill()
-{
-	toneIndex = 0 ;
-	toneCount = 0 ;
-}
-
-uint16_t Sine16k[32] =
-{
-//	2048,2268,2471,2605,2648,2605,2471,2268,
-//	2048,1826,1623,1490,1448,1490,1623,1826
-	2048,2165,2278,2381,2472,2547,2602,2636,
-	2648,2636,2602,2547,2472,2381,2278,2165,
-	2048,1931,1818,1715,1624,1549,1494,1460,
-	1448,1460,1494,1549,1624,1715,1818,1931
-} ;
-
-// This for 16kHz sample rate
-// Returns +ve or zero, remaining time
-//   -ve offset into buffer of blank time
-int32_t xtoneFill( uint16_t *buffer, uint32_t frequency, uint32_t timeMs )
-{
-	uint32_t i = 0 ;
-	uint32_t y ;
-
-	while ( i < 512 )
-	{
-		toneCount += frequency ;
-		y = ( toneCount & 0x01F0) >> 4 ;
-		*buffer++ = Sine16k[y] ;
-		i += 1 ;
-		if ( --timeMs == 0 )
-		{
-			break ;
-		}
-	}
-	y = i ;
-	if ( i )
-	{ // sine finished, but not buffer
-		while ( i < 512 )
-		{
-	  	*buffer++ = 2048 ;
-			i += 1 ;
-		}
-	}
-	return timeMs > 0 ? timeMs : -(int32_t)y ;
-}
-
-// returns non-zero when finished
-uint32_t toneFill( uint16_t *buffer, uint32_t frequency, uint32_t timeMs )
-{
-	int32_t x = 13115 / frequency ;
-	uint32_t y = 100 ;
-	uint32_t i = 0 ;
-	int32_t step = 0 ;
-	timeMs *= 32 ;
-
-	while ( i < 512 )
-	{
-		step += 1250 ;
-		while ( step > 0 )
-		{
-			step -= x ;
-			y += 1 ;
-		}
-		if ( y > 99 )
-		{
-			y -= 100 ;
-		}
-		*buffer++ = Sine_values[y] ;
-		i += 1 ;
-		timeMs -= 1 ;
-		if ( timeMs == 0 )
-		{
-			break ;
-		}
-	}
-	if ( i )
-	{ // We have reached the time, but not filled the buffer
-		// or ended the sine wave at 0 necessarily
-		while ( i < 512 )
-		{
-			step += 1250 ;
-			while ( step > 0 )
-			{
-				step -= x ;
-				y += 1 ;
-			}
-			if ( y > 99 )
-			{
-				y -= 100 ;
-				*buffer++ = 2048 ;
-				break ;
-			}
-			else
-			{
-				*buffer++ = Sine_values[y] ;
-			}
-			i += 1 ;
-		}
-	}
-	else
-	{
-		toneIndex = y ;
-		toneTime = timeMs ;
-		return 0 ;
-	}
-	if ( i )
-	{ // sine finished, but not buffer
-		
-	}
-	else
-	{ // buffer finished, maybe not sine
-		
-	}
-
-	return 0 ;
-
-}
-
-
-#endif
 
 

@@ -3296,7 +3296,7 @@ void telemetry_init( uint8_t telemetryType )
 		break ;
 #endif
 
-#ifdef REVX
+#if defined (REVX) && !defined (JR9303)
 		case TEL_MAVLINK :
 	  	memset(frskyAlarms, 0, sizeof(frskyAlarms));
 	  	resetTelemetry(TEL_ITEM_RESET_ALL);
@@ -3464,7 +3464,7 @@ void FRSKY_Init( uint8_t brate )
  #endif
 #endif
 
-#ifdef REVX
+#if defined (REVX) && !defined (JR9303)
 		initComPort( baudrate, SERIAL_NORM, parity ) ;
 		if ( g_model.telemetryRxInvert )
 		{
