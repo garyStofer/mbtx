@@ -1,4 +1,9 @@
-
+// enable the folowing 4 defines so VS-Code editor can gray out 
+// inactive code regions
+//#define PCBSKY
+//#define REVB
+//#define REVX
+//#define JR9303
 /****************************************************************************
 *  Copyright (c) 2011 by Michael Blandford. All rights reserved.
 *
@@ -4486,10 +4491,10 @@ void prepareForShutdown()
 	{
 		closeLogs() ;
 	}
-  g_eeGeneral.unexpectedShutdown = 0 ;
+	g_eeGeneral.unexpectedShutdown = 0 ;
 	g_eeGeneral.SavedBatteryVoltage = g_vbat100mV ;
 	STORE_MODELVARS ;			// To make sure we write model persistent timer
-  STORE_GENERALVARS ;		// To make sure we write "unexpectedShutdown"
+	STORE_GENERALVARS ;		// To make sure we write "unexpectedShutdown"
 	
 }
 
@@ -4677,8 +4682,10 @@ void main_loop(void* pdata)
 #if defined(PCBX9D) || defined(PCB9XT) || defined(PCBX12D) || defined(PCBX10)
 	if ( ( ( ResetReason & RCC_CSR_WDGRSTF ) != RCC_CSR_WDGRSTF ) && !unexpectedShutdown )	// Not watchdog
 #endif
+
 #if defined(PCBLEM1)
 	if ( ( ( ResetReason & RCC_CSR_IWDGRSTF ) != RCC_CSR_IWDGRSTF ) && !unexpectedShutdown )	// Not watchdog
+
 #endif
 	{
 		uint8_t evt ;
@@ -4703,9 +4710,11 @@ void main_loop(void* pdata)
 		checkWarnings();
 #ifdef PCBX9D
 		check6pos() ;
+
 #endif  	 
 #ifndef PCBLEM1
 		checkMultiPower() ;
+
 #endif
 		clearKeyEvents(); //make sure no keys are down before proceeding
 		wdt_reset() ;
@@ -4765,6 +4774,9 @@ void main_loop(void* pdata)
 #ifdef PCBSKY
         ab /= 55296  ;
         g_vbat100mV = ab + 3 + 3 ;// Also add on 0.3V for voltage drop across input diode
+	#ifdef JR9303
+		g_vbat100mV -= 6; // no diodes in the path to the battery,so deduct the above added 0.6v again
+	#endif	
 #endif
 #ifdef PCBX9D
  #if defined(PCBX9LITE) || defined(PCBX7ACCESS)
@@ -4822,6 +4834,8 @@ extern void startDsmPulses( void ) ;
 #endif
 
 #if defined(PCBX12D) || defined(PCBX10)
+
+
 #endif
 
 #ifdef PCBX9D
@@ -4867,7 +4881,7 @@ extern void startDsmPulses( void ) ;
 	heartbeat_running = 1 ;
 
   if (!g_eeGeneral.unexpectedShutdown)
-	{
+  {
     g_eeGeneral.unexpectedShutdown = 1;
     STORE_GENERALVARS ;
   }
@@ -4899,26 +4913,27 @@ extern uint8_t ModelImageValid ;
 #endif
 #if defined(PCBLEM1)
 	if ( ( ( ResetReason & RCC_CSR_IWDGRSTF ) != RCC_CSR_IWDGRSTF ) && !unexpectedShutdown )	// Not watchdog
+
 #endif
 	{
-		if ( g_vbat100mV > g_eeGeneral.SavedBatteryVoltage + 4 )
+		if ( g_vbat100mV > g_eeGeneral.SavedBatteryVoltage + 5 )  // if the current battery voltage is higher than the voltage when it was last shut down
 		{
 			uint8_t result ;
-  		clearKeyEvents() ;
+			clearKeyEvents() ;
 			while(1)
 			{
 				lcd_clear() ;
 
 				lcd_puts_P(0 + X12OFFSET,2*FH,  XPSTR("\002Battery Charged?") ) ;
 				lcd_puts_P(0 + X12OFFSET,3*FH,  XPSTR("\004Reset Timer?") ) ;
-			  lcd_puts_Pleft( 5*FH,PSTR(STR_YES_NO));
-			  lcd_puts_Pleft( 6*FH,PSTR(STR_MENU_EXIT));
-			  refreshDisplay() ;
+				lcd_puts_Pleft( 5*FH,PSTR(STR_YES_NO));
+				lcd_puts_Pleft( 6*FH,PSTR(STR_MENU_EXIT));
+				refreshDisplay() ;
 
 				result = keyDown() & 0x86 ;
-      	if( result )
-	      {
-				  clearKeyEvents() ;
+				if( result )
+				{	
+					clearKeyEvents() ;
 					if ( result & 0x82 )
 					{
 						g_eeGeneral.totalElapsedTime = 0 ;
@@ -4931,9 +4946,9 @@ extern uint8_t ModelImageValid ;
 						result = getEvent() ;
 						killEvents(result) ;
 					}
-    	    break ;
-	      }
-		    wdt_reset();
+					break ;  // while(1)
+				}
+				wdt_reset();
 				CoTickDelay(5) ;					// 10mS for now
 				if ( check_power_or_usb() ) break ;		// Usb on or power off
 			}
@@ -5032,7 +5047,7 @@ static uint8_t PBstate ;
 				powerIsOn = 1 ;
 			}
 			if ( powerIsOn >= 3 )
- #else // POWER_BUTTON
+ #else // !POWER_BUTTON
   #ifdef PCBSKY
    #ifdef REVX
 			if ( FrskyHubData[FR_RXRSI_COPY] )
@@ -5065,8 +5080,9 @@ static uint8_t PBstate ;
 				}
 			}
 			if ( powerState == POWER_OFF )
-  #else // PCBSKY
+  #else // !PCBSKY
 			if ( ( check_soft_power() == POWER_OFF ) )		// power now off
+
   #endif // PCBSKY
 // #endif
  #endif // POWER_BUTTON
@@ -5076,18 +5092,25 @@ static uint8_t PBstate ;
  				if ( checkRssi(0, rssi) == RSSI_STAY_ON )
   #else
 				if ( checkRssi(0) == RSSI_STAY_ON )
-  #endif
+
+  #endif //REVX
 				{
   #ifdef POWER_BUTTON
 					powerIsOn = 3 ;
-  #endif
+  #endif //POWER_BUTTON
 					continue ;
 				}
- #endif
-			// Time to switch off
-				putSystemVoice( SV_SHUTDOWN, AU_TADA ) ;
+ #endif  // CHECKRSSI
+				// Time to switch off
 				lcd_clear() ;
+// The next two lines show the current and previous recorded batery voltages 
+// during the shut-down message
+				lcd_outdezAtt(20,1*FH,g_vbat100mV,1);
+				lcd_outdezAtt(20,2*FH,g_eeGeneral.SavedBatteryVoltage,1);
 				lcd_puts_P( 4*FW + X12OFFSET, 3*FH, PSTR(STR_SHUT_DOWN) ) ;
+				putSystemVoice( SV_SHUTDOWN, AU_TADA ) ;
+				
+				
 //#ifdef PCBX12D
 //	lcd_outhex4( 20, FH, AudioActive ) ;
 //	lcd_outhex4( 100, FH, (uint16_t)(get_tmr10ms() - tgtime ) ) ;
@@ -5155,7 +5178,7 @@ static uint8_t PBstate ;
   #endif
 							break ;		// Power back on
 						}
- #endif // nREV9E
+ #endif // not POWER_BUTTON
 					}
 					wdt_reset() ;
 					if ( AudioActive )
@@ -5253,8 +5276,9 @@ extern uint8_t Ee32_model_delete_pending ;
    #ifdef REVX
 			powerState = check_soft_power() ;
 			if ( ( powerState == POWER_ON ) || ( powerState == POWER_TRAINER ) )
-   #else
+   #else   
 			if ( check_soft_power() == POWER_ON )
+
    #endif // REVX
 			{
 				module_output_active() ;
@@ -5263,7 +5287,7 @@ extern uint8_t Ee32_model_delete_pending ;
 				break ;	// Power back on
 			}
   #endif // PCBSKY
- #endif // POWER_BUTTON
+ #endif // not POWER_BUTTON
  #ifdef PCBLEM1
 		}
 	}
@@ -5341,7 +5365,7 @@ extern uint8_t PowerState ;
 
 //			}
 		}
- #endif		 
+ #endif	 // PCBLEM1	 
 #endif
 
 #ifdef SERIAL_HOST
@@ -5371,7 +5395,7 @@ extern uint8_t PowerState ;
 	}
 #endif
 	
-}
+}  // end of main_loop
 
 
 uint16_t getTmr2MHz()
@@ -8473,6 +8497,10 @@ static void updateVbat()
         ab /= 55296  ;
         g_vbat100mV = ( (ab + g_vbat100mV + 1) >> 1 ) + 3 ;  // Filter it a bit => more stable display
 								// Also add on 0.3V for voltage drop across input diode
+
+	#ifdef JR9303
+		g_vbat100mV -= 3; // JR9303 board has no diode, so remove above added 0.3V again
+	#endif
 #endif
 #ifdef PCBX9D
  #if defined(PCBX9LITE) || defined(PCBX7ACCESS)
