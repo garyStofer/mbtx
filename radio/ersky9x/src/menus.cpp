@@ -16,6 +16,14 @@
  *
  */
 
+// enable the folowing 4 defines so VS-Code editor can gray out 
+// inactive code regions
+//#define PCBSKY
+//#define REVB
+//#define REVX
+//#define JR9303
+
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15165,9 +15173,11 @@ void menuProcDiagCalib(uint8_t event)
 
 }
 
+#ifndef JR9303
 uint16_t Current ;
 uint32_t Current_sum ;
 uint8_t Current_count ;
+#endif
 
 #ifndef BIG_SCREEN
 void menuProcDiagAna(uint8_t event)
@@ -15184,8 +15194,11 @@ void menuProcDiagAna(uint8_t event)
 	ImageDisplay = 0 ;
 #endif
 
+
 #ifdef PCBSKY
+
  #ifndef REVA
+ #ifndef JR9303
 	if ( g_eeGeneral.ar9xBoard == 0 )
 	{
 		Current_sum += Current_current ;
@@ -15196,6 +15209,7 @@ void menuProcDiagAna(uint8_t event)
 			Current_count = 0 ;
 		}
 	}
+ #endif
  #endif
 #endif
 
@@ -15273,10 +15287,12 @@ void menuProcDiagAna(uint8_t event)
 	}
 	else
 	{
-	  lcd_putc( 18*FW, 2*FH, 'A' ) ;
-  	lcd_putc( 19*FW, 2*FH, '9' ) ;
-	}
-  lcd_outhex4( 17*FW, 3*FH,Analog_values[9]);
+		 	lcd_putc( 17*FW, 2*FH, 'A' ) ;
+			lcd_putc( 18*FW, 2*FH, '9' ) ;
+  }
+  // lcd_outdezAtt( 21*FW, 3*FH, (int32_t)Analog_values[9], PREC1);
+  lcd_outdezAtt(21*FW, 3*FH, (int32_t)calibratedStick[7]*1000/1024, PREC1);  //A9 
+  
  #endif
 #endif
 #endif  // ARUNI
@@ -15419,8 +15435,10 @@ void menuProcDiagAna(uint8_t event)
 	if ( g_eeGeneral.ar9xBoard == 0 )
 #endif
 	{
+#ifndef JR9303		
 		lcd_puts_Pleft( 5*FH, XPSTR("\022mA"));
 	  lcd_outdezAtt( 21*FW, 6*FH, Current/10 , (sub==2 ? InverseBlink : 0) ) ;
+#endif
 	}
 #endif
 
@@ -16625,15 +16643,15 @@ void menuProcStatistic2(uint8_t event)
 	DisplayOffset = STAT2_OFF_0 ;
 #endif
 
-  lcd_puts_Pleft( 1*FH, XPSTR("On Time")) ;
-  lcd_putcAtt( 11*FW+3+STAT2_OFF_0, 1*FH, ':', 0 ) ;
 	div_t qr ;
 	qr = div( g_eeGeneral.totalElapsedTime, 60 ) ;
-  putsTime( 9*FW+STAT2_OFF_0, FH*1, qr.quot, 0, 0 ) ;
-  lcd_outdezNAtt( 14*FW+STAT2_OFF_0, 1*FH, qr.rem, LEADING0, 2 ) ;
+	lcd_puts_Pleft( 1*FH, XPSTR("Battery Time")) ;
+	putsTime( 14*FW+STAT2_OFF_0, FH*1, qr.quot, 0, 0 ) ;
+	lcd_putcAtt( 16*FW+3+STAT2_OFF_0, 1*FH, ':', 0 ) ;
+  	lcd_outdezNAtt( 19*FW+STAT2_OFF_0, 1*FH, qr.rem, LEADING0, 2 ) ;
 
-  lcd_puts_Pleft( 2*FH, XPSTR("tmain          ms"));
-  lcd_outdezAtt(14*FW+STAT2_OFF_0 , 2*FH, (g_timeMain)/20 ,PREC2);
+  	lcd_puts_Pleft( 2*FH, XPSTR("tmain          ms"));
+  	lcd_outdezAtt(14*FW+STAT2_OFF_0 , 2*FH, (g_timeMain)/20 ,PREC2);
 
 #if defined(PCBLEM1)
 	lcd_puts_Pleft( 3*FH, XPSTR("Refresh time(uS)"));
@@ -19120,7 +19138,7 @@ void menuProcBattery(uint8_t event)
 			MAh_used = 0 ;
 			Current_used = 0 ;
 #endif
-      audioDefevent(AU_MENUS) ;
+      	audioDefevent(AU_MENUS) ;
     	killEvents(event) ;
     break;
   	
@@ -19135,6 +19153,7 @@ void menuProcBattery(uint8_t event)
 		putsVolts( 13*FW, 2*FH, g_vbat100mV, 0 ) ;
 
 #ifdef PCBSKY
+#ifndef JR9303
 #ifndef REVA
 		if ( ( g_eeGeneral.ar9xBoard == 0 ) && ( g_eeGeneral.extraPotsSource[0] != 2 ) && ( g_eeGeneral.extraPotsSource[1] != 2 ) )
 		{
@@ -19146,15 +19165,23 @@ void menuProcBattery(uint8_t event)
 				Current_count = 0 ;
 			}
 			lcd_puts_Pleft( 3*FH, PSTR(STR_CURRENT_MAX));
-	  	lcd_outdezAtt( 13*FW, 3*FH, Current, 0 ) ;
-	  	lcd_outdezAtt( 20*FW, 3*FH, Current_max/10, 0 ) ;
+	  		lcd_outdezAtt( 13*FW, 3*FH, Current, 0 ) ;
+	  		lcd_outdezAtt( 20*FW, 3*FH, Current_max/10, 0 ) ;
 			lcd_puts_Pleft( 4*FH, XPSTR("mAh\017[MENU]"));
-	  	lcd_outdezAtt( 12*FW, 4*FH, MAh_used + Current_used/3600 ,PREC1 ) ;
+	  		lcd_outdezAtt( 12*FW, 4*FH, MAh_used + Current_used/3600 ,PREC1 ) ;
 		}
 		lcd_puts_Pleft( 6*FH, PSTR(STR_CPU_TEMP_MAX));
-	  lcd_outdezAtt( 12*FW-2, 6*FH, (((((int32_t)Temperature - 838 ) * 621 ) >> 11 ) - 20) ,0 ) ;
-	  lcd_outdezAtt( 20*FW-2, 6*FH, (((((int32_t)Max_temperature - 838 ) * 621 ) >> 11 ) - 20) ,0 ) ;
+	  	lcd_outdezAtt( 12*FW-2, 6*FH, (((((int32_t)Temperature - 838 ) * 621 ) >> 11 ) - 20) ,0 ) ;
+	  	lcd_outdezAtt( 20*FW-2, 6*FH, (((((int32_t)Max_temperature - 838 ) * 621 ) >> 11 ) - 20) ,0 ) ;
 #endif // REVA
+#else 
+		div_t qr ;
+		qr = div( g_eeGeneral.totalElapsedTime, 60 ) ;
+		lcd_puts_Pleft( 3*FH, XPSTR("Since Charged")) ;
+		putsTime( 16*FW, 3*FH, qr.quot, 0, 0 ) ;
+		lcd_putcAtt( 18*FW+3, 3*FH, ':', 0 ) ;
+		lcd_outdezNAtt( 21*FW, 3*FH, qr.rem, LEADING0, 2 ) ;
+#endif // JR9303
 
 		disp_datetime( 5*FH ) ;
 #endif // PCBSKY
@@ -19163,9 +19190,11 @@ void menuProcBattery(uint8_t event)
 	disp_datetime( 5*FH ) ;
 #endif
 
+#ifndef JR9303
 #ifndef SMALL
 extern uint32_t Master_frequency ;
  	lcd_outdezAtt( 5*FW, 7*FH, Master_frequency/1000000, 0 ) ;
+#endif
 #endif
 }
 

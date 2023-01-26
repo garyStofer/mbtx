@@ -4,6 +4,7 @@
 //#define REVB
 //#define REVX
 //#define JR9303
+
 /****************************************************************************
 *  Copyright (c) 2011 by Michael Blandford. All rights reserved.
 *
@@ -5108,7 +5109,8 @@ static uint8_t PBstate ;
 				lcd_outdezAtt(20,1*FH,g_vbat100mV,1);
 				lcd_outdezAtt(20,2*FH,g_eeGeneral.SavedBatteryVoltage,1);
 				lcd_puts_P( 4*FW + X12OFFSET, 3*FH, PSTR(STR_SHUT_DOWN) ) ;
-				putSystemVoice( SV_SHUTDOWN, AU_TADA ) ;
+				if(!g_eeGeneral.disableSplashScreen)
+					putSystemVoice( SV_SHUTDOWN, AU_TADA ) ;
 				
 				
 //#ifdef PCBX12D
@@ -8430,6 +8432,7 @@ void runMixer()
 	}
 #endif
 #if (defined(PCBSKY) && !defined(ARUNI))
+#ifndef JR9303
 	if ( ( g_eeGeneral.ar9xBoard == 0 ) && ( g_eeGeneral.extraPotsSource[0] != 2 ) && ( g_eeGeneral.extraPotsSource[1] != 2 ) )
 	{
 
@@ -8460,6 +8463,7 @@ void runMixer()
 			Current_max = Current_current ;
 		}
 	}
+#endif
 #endif
 
 #ifdef PCB9XT
