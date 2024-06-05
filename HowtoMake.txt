@@ -1,6 +1,71 @@
 See README.md for info how to build 
 
 Specifically to build for gary's board use 
-make REVB=1 REVX=1 JR9303=1 -- this creates output file ersky9x_jr_rom.bin
-use EEP to load the .bin fiole onto the HW 
+-- this creates output file ersky9x_jr_rom.bin which contains the operating Firmware plus the Bootloader 
+
+To build the .bin file use make clean, then make with the following arguments
+
+make REVB=1 REVX=1 JR9303=1 -- for ERC12864_2 lcd 
+or
+make REVB=1 REVX=1 JR9303=1 ERC12864_14=1-- for ERC12864_14 lcd
+or 
+make REVB=1 REVX=1 JR9303=1 ERC24064_1=1-- for ERC24064-1 
+
+There are two bootloaders that can be used to upload firmware, One is built into the chip by ATMEL and is there even when the chip 
+is completely erased. The PC tool SAMBA is used to communicate with it.  
+
+The other is the OpenRC Bootloader and the PC tool EEPSky is used to communicate with it. this EEPsky based BL can not update the 
+Boootloader itself. SAMAB has to be used for that.
+
+For regular Firmware updates the EEP BL is activated by holding both horizontal trims together, then powering on and
+plugging in the USB cable.
+
+
+The ATMEL bootloader for SAMBA is activated by  FIRST pluggin in the USB cable,
+then  holding the horizontal trims together while turning on.  Further the ATMEL/SAMBA BL can only be reached when
+the signal at the "TRN" button siugnal is higg during startup. This can be confusing since the TRN button has an inverted logic state
+from all other switches and is a Normally Closed switch.
+
+See the files in my the git for the HW on how to use SAMBA  Also the website htps://er9x.com under the link for manuals 9XR0-PRO
+has a further link to a PDF " 9XR Pro Using SAMBA to restore a bricked TX"
+
+The bL for SAMBA shows "USB" in big letters on the LCD while the EEP BL shows Bootloader V3.0 on the screen.
+It is posible that the contrast of the screen is too high or too low and it's difficult to read,
+
+The Bootloader code itself is built in a seperate source code space (here ~/BL) via the makefile and with the same 
+make arguments as listed above for the main firmware. So for example:
+		make REVB=1 REVX=1 JR9303=1 ERC12864_14=1 
+		
+This creates a binary file: bootloader_flash8.bin which is then converted to a textual hex representation  via a
+python script : python bin2hex.py bootflash8.lbm bootloader_flash8.bin
+
+The resulting output file: bootflash8.lbm  needs then to be copied to the main firmware under:
+	mbtx/radio/src/ersky9x/bootlolader/  in order to be picked up by the next main firmware make. The text hex file (.lbm) is
+	included as the initializer of Uchar array.
+
+	
+
+Other ways of updating BL and OS are to put the .bin files on a SD card in the folder FIRMWARE and then boot the radio
+with the two horizontal trims appart from each other. A menu appears from where the appropriate binary 
+file can be chosen .
+
+Terminal trace  making BL
+	cd ~/BL -- (directory where OpenRCbootloader is cloned from GIT)
+	make clean
+	make REVB=1 REVX=1 JR9303=1 ERC12864_14=1  
+	python bin2hex.py bootflash8.lbm bootloader_flash8.bin
+	cp bootflash8.lbm ../mbtx/radio/ersky9x/src/bootloader
+	
+	
+Terminal trace making main OS
+	cd ~/mbtx/radio/ersky9x/src
+	make clean
+	make REVB=1 REVX=1 JR9303=1 ERC12864_14=1
+	cp ersky9x_jr_rom.bin /media/gary/USB DISK  -- for use with SAMBA or EEPsky -- Or copy to SD_card/FIRMWARE for loading frm SD
+	
+
+
+
+
+
 

@@ -1,9 +1,11 @@
 // enable the folowing 4 defines so VS-Code editor can gray out 
 // inactive code regions
+
 //#define PCBSKY
 //#define REVB
 //#define REVX
 //#define JR9303
+
 
 /****************************************************************************
 *  Copyright (c) 2011 by Michael Blandford. All rights reserved.

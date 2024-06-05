@@ -235,7 +235,15 @@ else #the pcbsky board -- aruni etc
      PROJECT = ersky9xr
 	 EXT_MOD=REVB-X
   endif
-  
+#steering of LCD type -- If none given, it defaults to er9x original type 
+  ifeq ($(ERC12864_14), 1)
+      CPPDEFS += -DERC12864_14      # the currently available 3" 128x64 COG LCD from ERC ( June 2024)
+  else ifeq ($(ERC24064_1), 1)
+      CPPDEFS += -DERC24064_1       # a 240x64 LCD with a 1608 controller from erc
+  else ifeq ($(ERC12864_2), 1)
+      CPPDEFS += -DERC12864_2       # the old ERC 128x64 -- not available anymore
+  endif
+
   CPPDEFS += -DREVX
   CPPDEFS += -DXFIRE
  ## 
